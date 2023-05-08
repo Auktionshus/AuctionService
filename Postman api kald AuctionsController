@@ -1,0 +1,32 @@
+Post en auktion
+
+http://localhost:5065/api/auctions/create
+
+{
+    "title": "Test auction",
+    "description": "This is a test auction",
+    "startingPrice": 50.0,
+    "endTime": "2023-05-01T12:00:00Z",
+    "BidHistory": [],
+    "ImageHistory": []
+}
+
+
+Get auktions liste
+
+http://localhost:5065/api/auctions/list
+
+
+Post et billede til auktion ud fra id
+
+http://localhost:5065/api/auctions/uploadImage/92366723-c3da-4527-95bc-b0d8ddab1e26
+
+
+Post et bud på en auktion
+
+http://localhost:5065/api/auctions/92366723-c3da-4527-95bc-b0d8ddab1e26/placeBid
+
+{
+    "amount": 60.0,
+    "bidder": "John Doe"
+}
