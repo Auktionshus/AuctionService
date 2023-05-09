@@ -14,4 +14,7 @@ public class Auction
     public decimal CurrentPrice { get; set; }
     public List<Bid> BidHistory { get; set; }
     public List<ImageRecord> ImageHistory { get; set; }
+
+    public string Category { get; set; }
+    public string Location { get; set; }
 }
