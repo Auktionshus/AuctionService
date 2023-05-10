@@ -32,7 +32,7 @@ namespace Auktionshus.Controllers
             auction.ImageHistory = new List<ImageRecord>();
 
             MongoClient dbClient = new MongoClient(
-                "mongodb://admin:1234@localhost:27018/?authSource=admin"
+                "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
             );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             await collection.InsertOneAsync(auction);
@@ -43,7 +43,7 @@ namespace Auktionshus.Controllers
         public async Task<IActionResult> ListAuctions()
         {
             MongoClient dbClient = new MongoClient(
-                "mongodb://admin:1234@localhost:27018/?authSource=admin"
+                "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
             );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             var auctions = await collection.Find(_ => true).ToListAsync();
@@ -54,7 +54,7 @@ namespace Auktionshus.Controllers
         public async Task<IActionResult> GetAuction(Guid id)
         {
             MongoClient dbClient = new MongoClient(
-                "mongodb://admin:1234@localhost:27018/?authSource=admin"
+                "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
             );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             Auction auction = await collection.Find(a => a.Id == id).FirstOrDefaultAsync();
@@ -86,7 +86,7 @@ namespace Auktionshus.Controllers
             }
 
             MongoClient dbClient = new MongoClient(
-                "mongodb://admin:1234@localhost:27018/?authSource=admin"
+                "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
             );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             var filter = Builders<Auction>.Filter.Eq(a => a.Id, id);
@@ -163,7 +163,7 @@ namespace Auktionshus.Controllers
         public async Task<IActionResult> PlaceBid(Guid id, [FromBody] Bid bid)
         {
             MongoClient dbClient = new MongoClient(
-                "mongodb://admin:1234@localhost:27018/?authSource=admin"
+                "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
             );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             Auction auction = await collection.Find(a => a.Id == id).FirstOrDefaultAsync();
@@ -205,7 +205,7 @@ namespace Auktionshus.Controllers
         public async Task<IActionResult> FilteredAuctions([FromBody] FilterModel filter)
         {
             MongoClient dbClient = new MongoClient(
-                "mongodb://admin:1234@localhost:27018/?authSource=admin"
+                "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
             );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             var auctions = await collection.Find(_ => true).ToListAsync();

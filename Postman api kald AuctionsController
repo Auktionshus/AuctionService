@@ -3,10 +3,13 @@ Post en auktion
 http://localhost:5065/api/auctions/create
 
 {
-    "title": "Test auction",
-    "description": "This is a test auction",
-    "startingPrice": 50.0,
+    "title": "3 kg grus",
+    "description": "vi har det perfekte grus til salg",
+    "startingPrice": 175.0,
     "endTime": "2023-05-01T12:00:00Z",
+    "category": "byggematerialer",
+    "location": "Fyn",
+    "Brand": "grus",
     "BidHistory": [],
     "ImageHistory": []
 }
