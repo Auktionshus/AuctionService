@@ -31,7 +31,9 @@ namespace Auktionshus.Controllers
             auction.BidHistory = new List<Bid>();
             auction.ImageHistory = new List<ImageRecord>();
 
-            MongoClient dbClient = new MongoClient("mongodb://admin:1234@localhost:27018/?authSource=admin");
+            MongoClient dbClient = new MongoClient(
+                "mongodb://admin:1234@localhost:27018/?authSource=admin"
+            );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             await collection.InsertOneAsync(auction);
             return Ok(auction);
@@ -40,7 +42,9 @@ namespace Auktionshus.Controllers
         [HttpGet("list")]
         public async Task<IActionResult> ListAuctions()
         {
-            MongoClient dbClient = new MongoClient("mongodb://admin:1234@localhost:27018/?authSource=admin");
+            MongoClient dbClient = new MongoClient(
+                "mongodb://admin:1234@localhost:27018/?authSource=admin"
+            );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             var auctions = await collection.Find(_ => true).ToListAsync();
             return Ok(auctions);
@@ -49,7 +53,9 @@ namespace Auktionshus.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetAuction(Guid id)
         {
-            MongoClient dbClient = new MongoClient("mongodb://admin:1234@localhost:27018/?authSource=admin");
+            MongoClient dbClient = new MongoClient(
+                "mongodb://admin:1234@localhost:27018/?authSource=admin"
+            );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             Auction auction = await collection.Find(a => a.Id == id).FirstOrDefaultAsync();
 
@@ -79,7 +85,9 @@ namespace Auktionshus.Controllers
                 Directory.CreateDirectory(_imagePath);
             }
 
-            MongoClient dbClient = new MongoClient("mongodb://admin:1234@localhost:27018/?authSource=admin");
+            MongoClient dbClient = new MongoClient(
+                "mongodb://admin:1234@localhost:27018/?authSource=admin"
+            );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             var filter = Builders<Auction>.Filter.Eq(a => a.Id, id);
             Auction auction = await collection.Find(filter).FirstOrDefaultAsync();
@@ -101,11 +109,15 @@ namespace Auktionshus.Controllers
                     // Validate file type and size
                     if (formFile.ContentType != "image/jpeg" && formFile.ContentType != "image/png")
                     {
-                        return BadRequest($"Invalid file type for file {formFile.FileName}. Only JPEG and PNG files are allowed.");
+                        return BadRequest(
+                            $"Invalid file type for file {formFile.FileName}. Only JPEG and PNG files are allowed."
+                        );
                     }
                     if (formFile.Length > 1048576) // 1MB
                     {
-                        return BadRequest($"File {formFile.FileName} is too large. Maximum file size is 1MB.");
+                        return BadRequest(
+                            $"File {formFile.FileName} is too large. Maximum file size is 1MB."
+                        );
                     }
                     if (formFile.Length > 0)
                     {
@@ -127,7 +139,10 @@ namespace Auktionshus.Controllers
                         };
 
                         auction.ImageHistory.Add(imageRecord);
-                        var update = Builders<Auction>.Update.Push(a => a.ImageHistory, imageRecord);
+                        var update = Builders<Auction>.Update.Push(
+                            a => a.ImageHistory,
+                            imageRecord
+                        );
                         await collection.UpdateOneAsync(filter, update);
                     }
                     else
@@ -147,7 +162,9 @@ namespace Auktionshus.Controllers
         [HttpPost("{id}/placeBid")]
         public async Task<IActionResult> PlaceBid(Guid id, [FromBody] Bid bid)
         {
-            MongoClient dbClient = new MongoClient("mongodb://admin:1234@localhost:27018/?authSource=admin");
+            MongoClient dbClient = new MongoClient(
+                "mongodb://admin:1234@localhost:27018/?authSource=admin"
+            );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             Auction auction = await collection.Find(a => a.Id == id).FirstOrDefaultAsync();
 
@@ -163,7 +180,9 @@ namespace Auktionshus.Controllers
 
             if (bid.Amount <= auction.CurrentPrice)
             {
-                return BadRequest($"Bid amount must be higher than {auction.CurrentPrice} the current price.");
+                return BadRequest(
+                    $"Bid amount must be higher than {auction.CurrentPrice} the current price."
+                );
             }
 
             bid.Id = Guid.NewGuid();
@@ -179,12 +198,15 @@ namespace Auktionshus.Controllers
 
             return CreatedAtAction(nameof(GetAuction), new { id = id }, auction);
         }
-                // ... (alle dine eksisterende metoder)
+
+        // ... (alle dine eksisterende metoder)
 
         [HttpPost("filter")]
         public async Task<IActionResult> FilteredAuctions([FromBody] FilterModel filter)
         {
-            MongoClient dbClient = new MongoClient("mongodb://admin:1234@localhost:27018/?authSource=admin");
+            MongoClient dbClient = new MongoClient(
+                "mongodb://admin:1234@localhost:27018/?authSource=admin"
+            );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             var auctions = await collection.Find(_ => true).ToListAsync();
 
