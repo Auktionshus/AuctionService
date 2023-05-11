@@ -18,33 +18,4 @@ public class Auction
 
     public string Category { get; set; }
     public string Location { get; set; }
-
-    public Auction(
-        Guid id,
-        string title,
-        string brand,
-        string description,
-        DateTime startTime,
-        DateTime endTime,
-        decimal startingPrice,
-        decimal currentPrice,
-        List<Bid> bidHistory,
-        List<ImageRecord> imageHistory,
-        string category,
-        string location
-    )
-    {
-        this.Id = id;
-        this.Title = title;
-        this.Brand = brand;
-        this.Description = description;
-        this.StartTime = startTime;
-        this.EndTime = endTime;
-        this.StartingPrice = startingPrice;
-        this.CurrentPrice = currentPrice;
-        this.BidHistory = bidHistory;
-        this.ImageHistory = imageHistory;
-        this.Category = category;
-        this.Location = location;
-    }
 }
