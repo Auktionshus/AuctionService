@@ -3,16 +3,30 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.Json;
+using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 using MongoDB.Driver;
 
-namespace Auktionshus.Controllers
+namespace Auctionhouse.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuctionsController : ControllerBase
+    public class AuctionController : ControllerBase
     {
+        private readonly ILogger<AuctionController> _logger;
+        private readonly string _hostName;
+
+        public AuctionController(ILogger<AuctionController> logger, IConfiguration config)
+        {
+            _logger = logger;
+            _hostName = config["HostnameRabbit"];
+            _logger.LogInformation($"Connection: {_hostName}");
+        }
+
         // Placeholder for the auction data storage
         private static readonly List<Auction> Auctions = new List<Auction>();
 
@@ -22,21 +36,45 @@ namespace Auktionshus.Controllers
         [HttpPost("create")]
         public async Task<IActionResult> CreateAuction(Auction auction)
         {
-            if (auction == null)
+            if (auction != null)
+            {
+                try
+                {
+                    // Opretter forbindelse til RabbitMQ
+                    var factory = new ConnectionFactory { HostName = _hostName };
+
+                    using var connection = factory.CreateConnection();
+                    using var channel = connection.CreateModel();
+
+                    channel.ExchangeDeclare(exchange: "topic_fleet", type: ExchangeType.Topic);
+
+                    // Serialiseres til JSON
+                    string message = JsonSerializer.Serialize(auction);
+
+                    // Konverteres til byte-array
+                    var body = Encoding.UTF8.GetBytes(message);
+
+                    // Sendes til kø
+                    channel.BasicPublish(
+                        exchange: "topic_fleet",
+                        routingKey: "auctions.create",
+                        basicProperties: null,
+                        body: body
+                    );
+
+                    _logger.LogInformation("Auction created and sent to RabbitMQ");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex.Message);
+                    return StatusCode(500);
+                }
+                return Ok(auction);
+            }
+            else
             {
                 return BadRequest("Auction object is null");
             }
-
-            auction.Id = Guid.NewGuid();
-            auction.BidHistory = new List<Bid>();
-            auction.ImageHistory = new List<ImageRecord>();
-
-            MongoClient dbClient = new MongoClient(
-                "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
-            );
-            var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
-            await collection.InsertOneAsync(auction);
-            return Ok(auction);
         }
 
         [HttpGet("list")]
