@@ -1,6 +1,6 @@
 Post en auktion
 
-http://localhost:5065/api/auctions/create
+http://localhost:8001/api/auctions/create
 
 {
     "title": "3 kg grus",
