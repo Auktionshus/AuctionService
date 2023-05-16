@@ -204,6 +204,8 @@ namespace AuctionService.Controllers
                 "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
             );
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
+            var bidCollection = dbClient.GetDatabase("Bid").GetCollection<Bid>("Bids");
+
             Auction auction = await collection.Find(a => a.Id == id).FirstOrDefaultAsync();
 
             if (auction == null)
@@ -234,51 +236,10 @@ namespace AuctionService.Controllers
 
             await collection.UpdateOneAsync(a => a.Id == id, update);
 
+            await bidCollection.InsertOneAsync(bid);
+
             return CreatedAtAction(nameof(GetAuction), new { id = id }, auction);
         }
 
-        // ... (alle dine eksisterende metoder)
-
-        [HttpPost("filter")]
-        public async Task<IActionResult> FilteredAuctions([FromBody] FilterModel filter)
-        {
-            MongoClient dbClient = new MongoClient(
-                "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
-            );
-            var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
-            var auctions = await collection.Find(_ => true).ToListAsync();
-
-            if (!string.IsNullOrEmpty(filter.Category))
-            {
-                auctions = auctions.Where(a => a.Category == filter.Category).ToList();
-            }
-
-            if (!string.IsNullOrEmpty(filter.Location))
-            {
-                auctions = auctions.Where(a => a.Location == filter.Location).ToList();
-            }
-
-            if (filter.MinPrice.HasValue)
-            {
-                auctions = auctions.Where(a => a.CurrentPrice >= filter.MinPrice.Value).ToList();
-            }
-
-            if (filter.MaxPrice.HasValue)
-            {
-                auctions = auctions.Where(a => a.CurrentPrice <= filter.MaxPrice.Value).ToList();
-            }
-
-            if (filter.DateFrom.HasValue)
-            {
-                auctions = auctions.Where(a => a.StartTime >= filter.DateFrom.Value).ToList();
-            }
-
-            if (filter.DateTo.HasValue)
-            {
-                auctions = auctions.Where(a => a.EndTime <= filter.DateTo.Value).ToList();
-            }
-
-            return Ok(auctions);
-        }
     }
 }
