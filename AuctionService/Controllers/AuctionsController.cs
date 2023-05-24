@@ -138,5 +138,18 @@ namespace AuctionService.Controllers
             await collection.UpdateOneAsync(filter, update);
             return Ok();
         }
+
+        [HttpGet("image/{fileId}")]
+        public async Task<IActionResult> GetImage(string fileId)
+        {
+            var fileStream = await gridFS.OpenDownloadStreamAsync(new ObjectId(fileId));
+
+            if (fileStream == null)
+            {
+                return NotFound();
+            }
+
+            return File(fileStream, "image/jpeg"); // Modify the content type as per your file format
+        }
     }
 }
