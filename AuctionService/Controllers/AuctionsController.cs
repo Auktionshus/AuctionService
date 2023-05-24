@@ -9,7 +9,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Driver.GridFS;
 
 namespace AuctionService.Controllers
 {
@@ -17,12 +19,15 @@ namespace AuctionService.Controllers
     [ApiController]
     public class AuctionController : ControllerBase
     {
+        private IGridFSBucket gridFS;
         private readonly ILogger<AuctionController> _logger;
         private readonly string _hostName;
+        private readonly string _mongoDbConnectionString;
 
         public AuctionController(ILogger<AuctionController> logger, IConfiguration config)
         {
             _logger = logger;
+            _mongoDbConnectionString = config["MongoDbConnectionString"];
             _hostName = config["HostnameRabbit"];
             _logger.LogInformation($"Connection: {_hostName}");
         }
@@ -80,9 +85,7 @@ namespace AuctionService.Controllers
         [HttpGet("list")]
         public async Task<IActionResult> ListAuctions()
         {
-            MongoClient dbClient = new MongoClient(
-                "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
-            );
+            MongoClient dbClient = new MongoClient(_mongoDbConnectionString);
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             var auctions = await collection.Find(_ => true).ToListAsync();
             return Ok(auctions);
@@ -91,9 +94,7 @@ namespace AuctionService.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetAuction(Guid id)
         {
-            MongoClient dbClient = new MongoClient(
-                "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
-            );
+            MongoClient dbClient = new MongoClient(_mongoDbConnectionString);
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
             Auction auction = await collection.Find(a => a.Id == id).FirstOrDefaultAsync();
 
@@ -104,142 +105,38 @@ namespace AuctionService.Controllers
             return Ok(auction);
         }
 
-        [HttpGet("{id}/listImages")]
-        public IActionResult ListImages(Guid id)
-        {
-            Auction auction = Auctions.FirstOrDefault(a => a.Id == id);
-            if (auction == null)
-            {
-                return NotFound($"Auction with Id {id} not found.");
-            }
-            return Ok(auction.ImageHistory);
-        }
-
         [HttpPost("uploadImage/{id}"), DisableRequestSizeLimit]
-        public async Task<IActionResult> UploadImage(Guid id)
+        public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
         {
-            if (!Directory.Exists(_imagePath))
-            {
-                Directory.CreateDirectory(_imagePath);
-            }
-
-            MongoClient dbClient = new MongoClient(
-                "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
-            );
+            MongoClient dbClient = new MongoClient(_mongoDbConnectionString);
+            var database = dbClient.GetDatabase("auction");
             var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
-            var filter = Builders<Auction>.Filter.Eq(a => a.Id, id);
-            Auction auction = await collection.Find(filter).FirstOrDefaultAsync();
+            gridFS = new GridFSBucket(database);
 
-            if (auction == null)
+            if (file == null || file.Length == 0)
             {
-                return NotFound($"Auction with Id {id} not found.");
+                return BadRequest("No file uploaded.");
             }
 
-            if (auction.ImageHistory == null)
+            var fileName = id.ToString() + Path.GetExtension(file.FileName);
+
+            var options = new GridFSUploadOptions
             {
-                auction.ImageHistory = new List<ImageRecord>();
-            }
+                Metadata = new BsonDocument { { "itemId", id.ToString() } }
+            };
 
-            try
-            {
-                foreach (var formFile in Request.Form.Files)
-                {
-                    // Validate file type and size
-                    if (formFile.ContentType != "image/jpeg" && formFile.ContentType != "image/png")
-                    {
-                        return BadRequest(
-                            $"Invalid file type for file {formFile.FileName}. Only JPEG and PNG files are allowed."
-                        );
-                    }
-                    if (formFile.Length > 1048576) // 1MB
-                    {
-                        return BadRequest(
-                            $"File {formFile.FileName} is too large. Maximum file size is 1MB."
-                        );
-                    }
-                    if (formFile.Length > 0)
-                    {
-                        var fileName = "image-" + Guid.NewGuid().ToString() + ".jpg";
-                        var fullPath = _imagePath + Path.DirectorySeparatorChar + fileName;
+            var imageStream = file.OpenReadStream();
+            var fileId = await gridFS.UploadFromStreamAsync(fileName, imageStream, options);
+            imageStream.Close();
 
-                        using (var stream = new FileStream(fullPath, FileMode.Create))
-                        {
-                            formFile.CopyTo(stream);
-                        }
-
-                        var imageURI = new Uri(fileName, UriKind.RelativeOrAbsolute);
-                        var imageRecord = new ImageRecord
-                        {
-                            Id = Guid.NewGuid(),
-                            Location = imageURI,
-                            Date = DateTime.UtcNow,
-                            // Add other properties like Description and AddedBy as needed
-                        };
-
-                        auction.ImageHistory.Add(imageRecord);
-                        var update = Builders<Auction>.Update.Push(
-                            a => a.ImageHistory,
-                            imageRecord
-                        );
-                        await collection.UpdateOneAsync(filter, update);
-                    }
-                    else
-                    {
-                        return BadRequest("Empty file submitted.");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex}");
-            }
-
-            return Ok("Image(s) uploaded successfully.");
-        }
-
-        [HttpPost("{id}/placeBid")]
-        public async Task<IActionResult> PlaceBid(Guid id, [FromBody] Bid bid)
-        {
-            MongoClient dbClient = new MongoClient(
-                "mongodb+srv://GroenOlsen:BhvQmiihJWiurl2V@auktionshusgo.yzctdhc.mongodb.net/?retryWrites=true&w=majority"
+            var filter = Builders<Auction>.Filter.Eq(auction => auction.Id, id);
+            var update = Builders<Auction>.Update.Set(
+                auction => auction.ImageFileId,
+                fileId.ToString()
             );
-            var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
-            var bidCollection = dbClient.GetDatabase("Bid").GetCollection<Bid>("Bids");
 
-            Auction auction = await collection.Find(a => a.Id == id).FirstOrDefaultAsync();
-
-            if (auction == null)
-            {
-                return NotFound($"Auction with Id {id} not found.");
-            }
-
-            if (auction.BidHistory == null)
-            {
-                auction.BidHistory = new List<Bid>();
-            }
-
-            if (bid.Amount <= auction.CurrentPrice)
-            {
-                return BadRequest(
-                    $"Bid amount must be higher than {auction.CurrentPrice} the current price."
-                );
-            }
-
-            bid.Id = Guid.NewGuid();
-            bid.Date = DateTime.UtcNow;
-            auction.BidHistory.Add(bid);
-            auction.CurrentPrice = bid.Amount;
-
-            var update = Builders<Auction>.Update
-                .Set(a => a.CurrentPrice, bid.Amount)
-                .Push(a => a.BidHistory, bid);
-
-            await collection.UpdateOneAsync(a => a.Id == id, update);
-
-            await bidCollection.InsertOneAsync(bid);
-
-            return CreatedAtAction(nameof(GetAuction), new { id = id }, auction);
+            await collection.UpdateOneAsync(filter, update);
+            return Ok();
         }
-
     }
 }
