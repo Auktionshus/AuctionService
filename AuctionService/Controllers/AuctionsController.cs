@@ -149,7 +149,7 @@ namespace AuctionService.Controllers
                 return NotFound();
             }
 
-            return File(fileStream, "image/jpeg"); // Modify the content type as per your file format
+            return File(fileStream, "image/jpg"); // Modify the content type as per your file format
         }
     }
 }
