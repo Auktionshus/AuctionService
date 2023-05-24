@@ -149,7 +149,11 @@ namespace AuctionService.Controllers
                 return NotFound();
             }
 
-            return File(fileStream, "image/jpg"); // Modify the content type as per your file format
+            var memoryStream = new MemoryStream();
+            await fileStream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            return new FileContentResult(memoryStream.ToArray(), "image/jpeg");
         }
     }
 }
