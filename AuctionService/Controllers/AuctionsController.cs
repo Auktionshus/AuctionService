@@ -138,7 +138,8 @@ namespace AuctionService.Controllers
             await collection.UpdateOneAsync(filter, update);
             return Ok();
         }
-
+/*
+        Virker ikke
         [HttpGet("image/{fileId}")]
         public async Task<IActionResult> GetImage(string fileId)
         {
@@ -155,5 +156,6 @@ namespace AuctionService.Controllers
 
             return new FileContentResult(memoryStream.ToArray(), "image/jpeg");
         }
+*/
     }
 }
