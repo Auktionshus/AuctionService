@@ -11,7 +11,6 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDB.Driver.GridFS;
 
 namespace AuctionService.Controllers
 {
@@ -19,7 +18,6 @@ namespace AuctionService.Controllers
     [ApiController]
     public class AuctionController : ControllerBase
     {
-        private IGridFSBucket gridFS;
         private readonly ILogger<AuctionController> _logger;
         private readonly string _hostName;
         private readonly string _mongoDbConnectionString;
@@ -103,57 +101,6 @@ namespace AuctionService.Controllers
                 return NotFound($"Auction with Id {id} not found.");
             }
             return Ok(auction);
-        }
-
-        [HttpPost("uploadImage/{id}"), DisableRequestSizeLimit]
-        public async Task<IActionResult> UploadImage(Guid id, IFormFile file)
-        {
-            MongoClient dbClient = new MongoClient(_mongoDbConnectionString);
-            var database = dbClient.GetDatabase("auction");
-            var collection = dbClient.GetDatabase("auction").GetCollection<Auction>("auctions");
-            gridFS = new GridFSBucket(database);
-
-            if (file == null || file.Length == 0)
-            {
-                return BadRequest("No file uploaded.");
-            }
-
-            var fileName = id.ToString() + Path.GetExtension(file.FileName);
-
-            var options = new GridFSUploadOptions
-            {
-                Metadata = new BsonDocument { { "itemId", id.ToString() } }
-            };
-
-            var imageStream = file.OpenReadStream();
-            var fileId = await gridFS.UploadFromStreamAsync(fileName, imageStream, options);
-            imageStream.Close();
-
-            var filter = Builders<Auction>.Filter.Eq(auction => auction.Id, id);
-            var update = Builders<Auction>.Update.Set(
-                auction => auction.ImageFileId,
-                fileId.ToString()
-            );
-
-            await collection.UpdateOneAsync(filter, update);
-            return Ok();
-        }
-
-        [HttpGet("image/{fileId}")]
-        public async Task<IActionResult> GetImage(string fileId)
-        {
-            var fileStream = await gridFS.OpenDownloadStreamAsync(new ObjectId(fileId));
-
-            if (fileStream == null)
-            {
-                return NotFound();
-            }
-
-            var memoryStream = new MemoryStream();
-            await fileStream.CopyToAsync(memoryStream);
-            memoryStream.Position = 0;
-
-            return new FileContentResult(memoryStream.ToArray(), "image/jpeg");
         }
     }
 }

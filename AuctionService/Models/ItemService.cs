@@ -6,15 +6,17 @@ public class ItemService
 {
     public Guid Id { get; set; }
 
-    public string Title { get; set; }
-    public string Brand { get; set; }
-    public string Description { get; set; }
+    public string? Title { get; set; }
+    public string? Brand { get; set; }
+    public string? Description { get; set; }
   
     public decimal StartingPrice { get; set; }
     
-    public List<ImageRecord> ImageHistory { get; set; }
+    public string? ImageFileId { get; set; }
 
-    public string Category { get; set; }
-    public string Location { get; set; }
+    public Category? category { get; set; }
+    public string? Location { get; set; }
+
+    public User? user {get; set;}
 }
 
