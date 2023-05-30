@@ -1,16 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Text.Json;
 using System.Text;
-using Microsoft.AspNetCore.Http;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using RabbitMQ.Client;
 
 namespace AuctionService.Controllers
 {
@@ -20,13 +16,18 @@ namespace AuctionService.Controllers
     {
         private readonly ILogger<AuctionController> _logger;
         private readonly string _hostName;
+        private readonly string _secret;
+        private readonly string _issuer;
         private readonly string _mongoDbConnectionString;
 
         public AuctionController(ILogger<AuctionController> logger, IConfiguration config)
         {
-            _logger = logger;
             _mongoDbConnectionString = config["MongoDbConnectionString"];
             _hostName = config["HostnameRabbit"];
+            _secret = config["Secret"];
+            _issuer = config["Issuer"];
+
+            _logger = logger;
             _logger.LogInformation($"Connection: {_hostName}");
         }
 
@@ -35,6 +36,13 @@ namespace AuctionService.Controllers
 
         // Image storage path
         private readonly string _imagePath = "Images";
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> Get()
+        {
+            return Ok("You're authorized");
+        }
 
         [HttpPost("create")]
         public async Task<IActionResult> CreateAuction(Auction auction)
