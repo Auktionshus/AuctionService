@@ -45,13 +45,13 @@ namespace AuctionService.Controllers
         }
 
         [HttpPost("create")]
-        public async Task<IActionResult> CreateAuction(Auction auction)
+        public async Task<IActionResult> CreateAuction(AuctionDTO auction)
         {
             if (auction != null)
             {
                 try
                 {
-                    // Opretter forbindelse til RabbitMQ
+                    // Connect to RabbitMQ
                     var factory = new ConnectionFactory { HostName = _hostName };
 
                     using var connection = factory.CreateConnection();
@@ -59,13 +59,13 @@ namespace AuctionService.Controllers
 
                     channel.ExchangeDeclare(exchange: "topic_fleet", type: ExchangeType.Topic);
 
-                    // Serialiseres til JSON
+                    // Serialize to JSON
                     string message = JsonSerializer.Serialize(auction);
 
-                    // Konverteres til byte-array
+                    // Convert to byte-array
                     var body = Encoding.UTF8.GetBytes(message);
 
-                    // Sendes til kø
+                    // Send to RabbitMQ
                     channel.BasicPublish(
                         exchange: "topic_fleet",
                         routingKey: "auctions.create",
@@ -110,6 +110,7 @@ namespace AuctionService.Controllers
             }
             return Ok(auction);
         }
+
         [HttpGet("version")]
         public IEnumerable<string> Get()
         {
@@ -121,7 +122,6 @@ namespace AuctionService.Controllers
                 properties.Add($"{attribute.AttributeType.Name} - {attribute.ToString()}");
             }
             return properties;
-
         }
     }
 }
