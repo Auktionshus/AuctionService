@@ -44,6 +44,7 @@ namespace AuctionService.Controllers
             return Ok("You're authorized");
         }
 
+        [Authorize]
         [HttpPost("create")]
         public async Task<IActionResult> CreateAuction(AuctionDTO auction)
         {
