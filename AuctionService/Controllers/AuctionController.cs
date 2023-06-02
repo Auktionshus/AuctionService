@@ -142,7 +142,7 @@ namespace AuctionService.Controllers
         /// </summary>
         /// <param name="id">Auction id</param>
         /// <returns>An auction</returns>
-        [HttpGet("Auction/{id}")]
+        [HttpGet("{id}")]
         public async Task<IActionResult> GetAuction(Guid id)
         {
             try
